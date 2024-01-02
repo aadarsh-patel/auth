@@ -89,7 +89,7 @@ class IconUtils {
     final theme = Theme.of(context).brightness;
     final color = Color(int.parse("0xFF" + hexColor));
     // Color is close to neutral-grey and it's too light or dark for theme
-    if (isCloseToNeutralGrey(color) &&
+    if (_isCloseToNeutralGrey(color) &&
         ((theme == Brightness.light && _getColorLuminance(color) > 0.70) ||
             (theme == Brightness.dark && _getColorLuminance(color) < 0.05))) {
       return Theme.of(context).colorScheme.iconColor;
@@ -102,7 +102,7 @@ class IconUtils {
     return _colorLuminance.putIfAbsent(color, () => color.computeLuminance());
   }
 
-  bool isCloseToNeutralGrey(Color color, {double tolerance = 0.03}) {
+  bool _isCloseToNeutralGrey(Color color, {double tolerance = 0.03}) {
     final r = color.red / 255;
     final g = color.green / 255;
     final b = color.blue / 255;
