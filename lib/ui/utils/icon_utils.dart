@@ -15,7 +15,7 @@ class IconUtils {
   // Map of icon-title to the color code in HEX
   final Map<String, String> _simpleIcons = {};
   final Map<String, CustomIconData> _customIcons = {};
-  // Map of icon's color to its luminance
+  // Map of icon-color to its luminance
   final Map<Color, double> _colorLuminance = {};
 
   Future<void> init() async {
@@ -63,20 +63,6 @@ class IconUtils {
     }
   }
 
-  Color? _getAdaptiveColor(String? hexColor, BuildContext context) {
-    if (hexColor == null) return null;
-    final theme = Theme.of(context).brightness;
-    final color = Color(int.parse("0xFF" + hexColor));
-    if (_colorLuminance[color] == null) {
-      _colorLuminance[color] = color.computeLuminance();
-    }
-    if ((theme == Brightness.light && _colorLuminance[color]! > 0.9) ||
-        (theme == Brightness.dark && _colorLuminance[color]! < 0.08)) {
-      return Theme.of(context).colorScheme.iconColor;
-    }
-    return color;
-  }
-
   Widget _getSVGIcon(
     String path,
     String title,
@@ -96,6 +82,34 @@ class IconUtils {
             )
           : null,
     );
+  }
+
+  Color? _getAdaptiveColor(String? hexColor, BuildContext context) {
+    if (hexColor == null) return null;
+    final theme = Theme.of(context).brightness;
+    final color = Color(int.parse("0xFF" + hexColor));
+    // Color is close to neutral-grey and it's too light or dark for theme
+    if (isCloseToNeutralGrey(color) &&
+        ((theme == Brightness.light && _getColorLuminance(color) > 0.70) ||
+            (theme == Brightness.dark && _getColorLuminance(color) < 0.05))) {
+      return Theme.of(context).colorScheme.iconColor;
+    }
+
+    return color;
+  }
+
+  double _getColorLuminance(Color color) {
+    return _colorLuminance.putIfAbsent(color, () => color.computeLuminance());
+  }
+
+  bool isCloseToNeutralGrey(Color color, {double tolerance = 0.03}) {
+    final r = color.red / 255;
+    final g = color.green / 255;
+    final b = color.blue / 255;
+    final averageBrightness = (r + g + b) / 3;
+    return (r - averageBrightness).abs() <= tolerance &&
+        (g - averageBrightness).abs() <= tolerance &&
+        (b - averageBrightness).abs() <= tolerance;
   }
 
   Future<void> _loadJson() async {
