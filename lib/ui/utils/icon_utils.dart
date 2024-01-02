@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ente_auth/ente_theme_data.dart';
 import 'package:ente_auth/theme/ente_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,8 @@ class IconUtils {
   // Map of icon-title to the color code in HEX
   final Map<String, String> _simpleIcons = {};
   final Map<String, CustomIconData> _customIcons = {};
+  // Map of icon-color to its luminance
+  final Map<Color, double> _colorLuminance = {};
 
   Future<void> init() async {
     await _loadJson();
@@ -31,6 +34,7 @@ class IconUtils {
         title,
         _customIcons[title]!.color,
         width,
+        context,
       );
     } else if (_simpleIcons.containsKey(title)) {
       return _getSVGIcon(
@@ -38,6 +42,7 @@ class IconUtils {
         title,
         _simpleIcons[title],
         width,
+        context,
       );
     } else if (title.isNotEmpty) {
       bool showLargeIcon = width > 24;
@@ -63,18 +68,47 @@ class IconUtils {
     String title,
     String? color,
     double width,
+    BuildContext context,
   ) {
+    final iconColor = _getAdaptiveColor(color, context);
     return SvgPicture.asset(
       path,
       width: width,
       semanticsLabel: title,
-      colorFilter: color != null
+      colorFilter: iconColor != null
           ? ColorFilter.mode(
-              Color(int.parse("0xFF" + color)),
+              iconColor,
               BlendMode.srcIn,
             )
           : null,
     );
+  }
+
+  Color? _getAdaptiveColor(String? hexColor, BuildContext context) {
+    if (hexColor == null) return null;
+    final theme = Theme.of(context).brightness;
+    final color = Color(int.parse("0xFF" + hexColor));
+    // Color is close to neutral-grey and it's too light or dark for theme
+    if (_isCloseToNeutralGrey(color) &&
+        ((theme == Brightness.light && _getColorLuminance(color) > 0.70) ||
+            (theme == Brightness.dark && _getColorLuminance(color) < 0.05))) {
+      return Theme.of(context).colorScheme.iconColor;
+    }
+    return color;
+  }
+
+  double _getColorLuminance(Color color) {
+    return _colorLuminance.putIfAbsent(color, () => color.computeLuminance());
+  }
+
+  bool _isCloseToNeutralGrey(Color color, {double tolerance = 0.03}) {
+    final r = color.red / 255;
+    final g = color.green / 255;
+    final b = color.blue / 255;
+    final averageBrightness = (r + g + b) / 3;
+    return (r - averageBrightness).abs() <= tolerance &&
+        (g - averageBrightness).abs() <= tolerance &&
+        (b - averageBrightness).abs() <= tolerance;
   }
 
   Future<void> _loadJson() async {
