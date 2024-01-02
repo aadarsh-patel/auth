@@ -102,13 +102,9 @@ class IconUtils {
   }
 
   bool _isCloseToNeutralGrey(Color color, {double tolerance = 0.03}) {
-    final r = color.red / 255;
-    final g = color.green / 255;
-    final b = color.blue / 255;
-    final averageBrightness = (r + g + b) / 3;
-    return (r - averageBrightness).abs() <= tolerance &&
-        (g - averageBrightness).abs() <= tolerance &&
-        (b - averageBrightness).abs() <= tolerance;
+    return (color.red - color.green).abs() <= tolerance &&
+        (color.green - color.blue).abs() <= tolerance &&
+        (color.blue - color.red).abs() <= tolerance;
   }
 
   Future<void> _loadJson() async {
