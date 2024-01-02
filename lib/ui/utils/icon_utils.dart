@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ente_auth/ente_theme_data.dart';
 import 'package:ente_auth/theme/ente_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,8 @@ class IconUtils {
   // Map of icon-title to the color code in HEX
   final Map<String, String> _simpleIcons = {};
   final Map<String, CustomIconData> _customIcons = {};
+  // Map of icon's color to its luminance
+  final Map<Color, double> _colorLuminance = {};
 
   Future<void> init() async {
     await _loadJson();
@@ -31,6 +34,7 @@ class IconUtils {
         title,
         _customIcons[title]!.color,
         width,
+        context,
       );
     } else if (_simpleIcons.containsKey(title)) {
       return _getSVGIcon(
@@ -38,6 +42,7 @@ class IconUtils {
         title,
         _simpleIcons[title],
         width,
+        context,
       );
     } else if (title.isNotEmpty) {
       bool showLargeIcon = width > 24;
@@ -58,19 +63,35 @@ class IconUtils {
     }
   }
 
+  Color? _getAdaptiveColor(String? hexColor, BuildContext context) {
+    if (hexColor == null) return null;
+    final theme = Theme.of(context).brightness;
+    final color = Color(int.parse("0xFF" + hexColor));
+    if (_colorLuminance[color] == null) {
+      _colorLuminance[color] = color.computeLuminance();
+    }
+    if ((theme == Brightness.light && _colorLuminance[color]! > 0.9) ||
+        (theme == Brightness.dark && _colorLuminance[color]! < 0.08)) {
+      return Theme.of(context).colorScheme.iconColor;
+    }
+    return color;
+  }
+
   Widget _getSVGIcon(
     String path,
     String title,
     String? color,
     double width,
+    BuildContext context,
   ) {
+    final iconColor = _getAdaptiveColor(color, context);
     return SvgPicture.asset(
       path,
       width: width,
       semanticsLabel: title,
-      colorFilter: color != null
+      colorFilter: iconColor != null
           ? ColorFilter.mode(
-              Color(int.parse("0xFF" + color)),
+              iconColor,
               BlendMode.srcIn,
             )
           : null,
