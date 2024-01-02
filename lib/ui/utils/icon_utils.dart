@@ -94,7 +94,6 @@ class IconUtils {
             (theme == Brightness.dark && _getColorLuminance(color) < 0.05))) {
       return Theme.of(context).colorScheme.iconColor;
     }
-
     return color;
   }
 
